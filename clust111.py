@@ -55,79 +55,70 @@ print('invert X Y...')
 #face = sp.misc.imresize(face, 0.10) / 255.
 #cv2.imshow('face', face)
 #cv2.waitKey()
-# Convert the image into a graph with the value of the gradient on the
-# edges.
 
+def scalePoClo(pointsC):
+    print('scaller...')
+    X = pointsC#StandardScaler().fit_transform(pointsC)#[:100000])
+    maxX=X[::,0:3].max()
+    X[::,0] = X[::,0]/maxX
+    X[::,1] = X[::,1]/maxX
+    X[::,2] = X[::,2]/maxX
+	return X
 
-# #############################################################################
-# Generate sample data
-#centers = [[1, 1], [-1, -1], [1, -1]]
-#X, labels_true = make_blobs(n_samples=750, centers=centers, cluster_std=0.4,
-#                            random_state=0)
-print('scaller...')
-X = pointsC#StandardScaler().fit_transform(pointsC)#[:100000])
-maxX=X[::,0:3].max()
-X[::,0] = X[::,0]/maxX
-X[::,1] = X[::,1]/maxX
-X[::,2] = X[::,2]/maxX
-# #############################################################################
-try:
-    db = load(open("dbs.pickle","rb"))
-    print('DB loaded from pickle')
-except FileNotFoundError:
-    print('DBSCAN...')
-    t0 = time.time()
-    db = DBSCAN(eps=0.01, min_samples=100).fit(X)
-    t_dbs = time.time() - t0
-    print("Time: %.2f" % t_dbs)
-    dump(db,open("dbs.pickle","wb"))
-# Compute DBSCAN
+def clustDBSCAN(X):
+    try:
+        db = load(open("dbs.pickle","rb"))
+        print('DB loaded from pickle')
+    except FileNotFoundError:
+        print('DBSCAN...')
+        t0 = time.time()
+        db = DBSCAN(eps=0.01, min_samples=100).fit(X)
+        t_dbs = time.time() - t0
+        print("Time: %.2f" % t_dbs)
+        dump(db,open("dbs.pickle","wb"))
+        return db
 
-core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
-core_samples_mask[db.core_sample_indices_] = True
-labels = db.labels_
+def plotPoClo(X,labels):
+    from matplotlib import pyplot
+    from mpl_toolkits.mplot3d import Axes3D
+    fig = pyplot.figure()
+    ax = Axes3D(fig)
+    ax.scatter(X[:,0],X[:,1],X[:,2],c=labels)
+#ax.scatter(X3[:,0],X3[:,1],X3[:,2],c=X3[:,3])
+    pyplot.show()
+    #print(labels.shape)
+    #exit(0)
 
-# Number of clusters in labels, ignoring noise if present.
-n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
-
-print('Estimated number of clusters: %d' % n_clusters_)
-
-from matplotlib import pyplot
-from mpl_toolkits.mplot3d import Axes3D
-fig = pyplot.figure()
-ax = Axes3D(fig)
-#print(labels.shape)
-#exit(0)
-try:
-    X2 = load(open("X2.pickle","rb"))
-    print('X2 loaded from pickle')
-except FileNotFoundError:
-    print('start X2...')
-    t0 = time.time()
-    X2=np.array([0,0,0,0,0,0])
-    for i in range(0,labels.shape[0]):
-        if labels[i]==-1:
-            X[i]=[0,0,0]
-        else:
-            #if labels[i] in range(10,50):
-            X2 = np.vstack((X2,np.array([X[i,0],X[i,1],X[i,2],labels[i],200,100])))
-    t_dbs = time.time() - t0
-    dump(X2,open("X2.pickle","wb"))
-    print("end X2   Time: %.2f" % t_dbs)
-X3=np.array([0,0,0,0,0,0])
-X3 = X2
+def remNoClust(X,labels)
+    try:
+        X2 = load(open("X2.pickle","rb"))
+        print('X2 loaded from pickle')
+    except FileNotFoundError:
+        print('start X2...')
+        t0 = time.time()
+        X2=np.array([0,0,0,0,0,0])
+        for i in range(0,labels.shape[0]):
+            if labels[i]==-1:
+                X[i]=[0,0,0]
+            else:
+                #if labels[i] in range(10,50):
+                X2 = np.vstack((X2,np.array([X[i,0],X[i,1],X[i,2],labels[i],200,100])))
+        t_dbs = time.time() - t0
+        dump(X2,open("X2.pickle","wb"))
+        print("end X2   Time: %.2f" % t_dbs)
+    X3 = np.array([0,0,0,0,0,0])
+    X3 = X2
 #X2 = X2[::30,::]
 #for i in range(0,X2.shape[0]):
     #if X2[i,3] in range(30,31):#int(X2[::,3].max())):
     #    X3 = np.vstack((X3,np.array(X2[i])))
 #    X3 = np.vstack((X3,np.array(X2[i])))
-X3[::,0:3] = X3[::,0:3]*100
+    X3[::,0:3] = X3[::,0:3]*100
+    return X3
 
-#ax.scatter(X[:,0],X[:,1],X[:,2],c=labels)
-#ax.scatter(X3[:,0],X3[:,1],X3[:,2],c=X3[:,3])
-#pyplot.show()
-write_plyTri('out112.ply', X3)
-print('%s saved' % 'out112.ply')
+def
+    write_plyTri('out112.ply', X3)
+    print('%s saved' % 'out112.ply')
 exit(0)
 #print("Homogeneity: %0.3f" % metrics.homogeneity_score(labels_true, labels))
 #print("Completeness: %0.3f" % metrics.completeness_score(labels_true, labels))
@@ -219,3 +210,14 @@ plt.show()
 
 if __name__ == '__main__':
     loadPoClo(PointC)
+    X=scalePoClo(PointC)
+    db=clustDBSCAN(X)
+
+    core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
+    core_samples_mask[db.core_sample_indices_] = True
+    labels = db.labels_
+    # Number of clusters in labels, ignoring noise if present.
+    n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+    print('Estimated number of clusters: %d' % n_clusters_)
+
+    plotPoClo(labels)

@@ -34,7 +34,7 @@ def loadPoClo():
 #face = cv2.pyrDown(cv2.imread ('stul/disp/1d_2208_2b3(2).jpg'))
 #face = cv2.imread ('stul/disp/1d_2208_2b3(2).jpg')
     try:
-        print('PointC load from pickle')
+        print('PointC loaded from pickle')
         pointsC = load(open("pointsC.p","rb"))
     except FileNotFoundError:
         print('load data from file...')

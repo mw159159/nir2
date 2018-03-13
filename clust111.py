@@ -22,7 +22,7 @@ from pickle import load, dump
 
 from wriply import write_plyTri
 
-def loadPoClo(pointsC):
+def loadPoClo():
 
 # load the raccoon face as a numpy array
 #try:  # SciPy >= 0.16 have face in misc
@@ -34,14 +34,15 @@ def loadPoClo(pointsC):
 #face = cv2.pyrDown(cv2.imread ('stul/disp/1d_2208_2b3(2).jpg'))
 #face = cv2.imread ('stul/disp/1d_2208_2b3(2).jpg')
     try:
-        print('loaded from pickle')
+        print('PointC load from pickle')
         pointsC = load(open("pointsC.p","rb"))
     except FileNotFoundError:
         print('load data from file...')
         points2 = np.loadtxt("out3", delimiter=" ")
-        pointsC = np.hstack((points2[:,0:1],points2[:,1:2],points2[:,2:3]))
+        pointsC = np.hstack((points2[:,0:1],points2[:,1:2],points2[:,2:3],points2[:,3:4],points2[:,4:5],points2[:,5:6]))
         dump(pointsC,open("pointsC.p","wb"))
-print('invert X Y...')
+    return pointsC
+#!print('invert X Y...')
 #exit(0)
 #max2 = pointsC[:,0].max()
 #pointsC[:,0]= max2 - pointsC[:,0]
@@ -60,10 +61,10 @@ def scalePoClo(pointsC):
     print('scaller...')
     X = pointsC#StandardScaler().fit_transform(pointsC)#[:100000])
     maxX=X[::,0:3].max()
-    X[::,0] = X[::,0]/maxX
-    X[::,1] = X[::,1]/maxX
-    X[::,2] = X[::,2]/maxX
-	return X
+    X[:,0:1] = X[:,0:1]/maxX
+    X[:,1:2] = X[:,1:2]/maxX
+    X[:,2:3] = X[:,2:3]/maxX
+    return X
 
 def clustDBSCAN(X):
     try:
@@ -72,24 +73,23 @@ def clustDBSCAN(X):
     except FileNotFoundError:
         print('DBSCAN...')
         t0 = time.time()
-        db = DBSCAN(eps=0.01, min_samples=100).fit(X)
+        db = DBSCAN(eps=0.01, min_samples=100).fit(X, sample_weight=X[:,3:4])
         t_dbs = time.time() - t0
         print("Time: %.2f" % t_dbs)
         dump(db,open("dbs.pickle","wb"))
-        return db
+    return db
 
-def plotPoClo(X,labels):
+def plotPoClo(X):
     from matplotlib import pyplot
     from mpl_toolkits.mplot3d import Axes3D
     fig = pyplot.figure()
     ax = Axes3D(fig)
-    ax.scatter(X[:,0],X[:,1],X[:,2],c=labels)
-#ax.scatter(X3[:,0],X3[:,1],X3[:,2],c=X3[:,3])
+    ax.scatter(X[:,0:1],X[:,1:2],X[:,2:3],c=X[:,3:4])
     pyplot.show()
     #print(labels.shape)
     #exit(0)
 
-def remNoClust(X,labels)
+def remNoClust(X,labels):
     try:
         X2 = load(open("X2.pickle","rb"))
         print('X2 loaded from pickle')
@@ -116,10 +116,7 @@ def remNoClust(X,labels)
     X3[::,0:3] = X3[::,0:3]*100
     return X3
 
-def
-    write_plyTri('out112.ply', X3)
-    print('%s saved' % 'out112.ply')
-exit(0)
+#!exit(0)
 #print("Homogeneity: %0.3f" % metrics.homogeneity_score(labels_true, labels))
 #print("Completeness: %0.3f" % metrics.completeness_score(labels_true, labels))
 #print("V-measure: %0.3f" % metrics.v_measure_score(labels_true, labels))
@@ -132,84 +129,85 @@ exit(0)
 
 # #############################################################################
 # Plot result
-import matplotlib.pyplot as plt
-
-# Black removed and is used for noise instead.
-unique_labels = set(labels)
-colors = [plt.cm.Spectral(each)
-          for each in np.linspace(0, 1, len(unique_labels))]
-for k, col in zip(unique_labels, colors):
-    if k == -1:
-        # Black used for noise.
-        col = [0, 0, 0, 1]
-
-    class_member_mask = (labels == k)
-
-    xy = X[class_member_mask & core_samples_mask]
-    plt.plot(xy[:, 0], xy[:, 1], 'o', markerfacecolor=tuple(col),
-             markeredgecolor='k', markersize=5)
-
-    xy = X[class_member_mask & ~core_samples_mask]
-    plt.plot(xy[:, 0], xy[:, 1], 'o', markerfacecolor=tuple(col),
-             markeredgecolor='k', markersize=1)
-
-plt.title('Estimated number of clusters: %d' % n_clusters_)
-plt.show()
-exit(0)
-#----------------------------------------------------------
-print('graph image...')
-graph = image.img_to_graph(face)
-
-# Take a decreasing function of the gradient: an exponential
-# The smaller beta is, the more independent the segmentation is of the
-# actual image. For beta=1, the segmentation is close to a voronoi
-beta = 5
-eps = 1e-6
-print('exp image...')
-graph.data = np.exp(-beta * graph.data / graph.data.std()) + eps
-
-#X=face
-print(face.shape)
-exit(0)
-# k_means = KMeans(init='k-means++', n_clusters=3, n_init=10)
-# t0 = time.time()
-# k_means.fit(X)
-# t_batch = time.time() - t0
+# import matplotlib.pyplot as plt
 #
-# mbk = MiniBatchKMeans(init='k-means++', n_clusters=3, batch_size=batch_size,
-#                       n_init=10, max_no_improvement=10, verbose=0)
-# t0 = time.time()
-# mbk.fit(X)
-# t_mini_batch = time.time() - t0
-
-# Apply spectral clustering (this step goes much faster if you have pyamg
-# installed)
-N_REGIONS = 10
-
-#Visualize the resulting regions
-print('start clustering image...')
-for assign_labels in ('discretize', 'kmeans'):#, 'discretize'):
-    t0 = time.time()
-    print('spectral clustering graph...')
-    labels = spectral_clustering(graph, n_clusters=N_REGIONS,
-                                 assign_labels=assign_labels, random_state=1)
-    t1 = time.time()
-    labels = labels.reshape(face.shape)
-
-    plt.figure(figsize=(5, 5))
-    plt.imshow(face, cmap=plt.cm.gray)
-    for l in range(N_REGIONS):
-        plt.contour(labels == l, contours=1,
-                    colors=[plt.cm.spectral(l / float(N_REGIONS))])
-    plt.xticks(())
-    plt.yticks(())
-    title = 'Spectral clustering: %s, %.2fs' % (assign_labels, (t1 - t0))
-    print(title)
-    plt.title(title)
-plt.show()
-
+# # Black removed and is used for noise instead.
+# unique_labels = set(labels)
+# colors = [plt.cm.Spectral(each)
+#           for each in np.linspace(0, 1, len(unique_labels))]
+# for k, col in zip(unique_labels, colors):
+#     if k == -1:
+#         # Black used for noise.
+#         col = [0, 0, 0, 1]
+#
+#     class_member_mask = (labels == k)
+#
+#     xy = X[class_member_mask & core_samples_mask]
+#     plt.plot(xy[:, 0], xy[:, 1], 'o', markerfacecolor=tuple(col),
+#              markeredgecolor='k', markersize=5)
+#
+#     xy = X[class_member_mask & ~core_samples_mask]
+#     plt.plot(xy[:, 0], xy[:, 1], 'o', markerfacecolor=tuple(col),
+#              markeredgecolor='k', markersize=1)
+#
+# plt.title('Estimated number of clusters: %d' % n_clusters_)
+# plt.show()
+# exit(0)
+# #----------------------------------------------------------
+# print('graph image...')
+# graph = image.img_to_graph(face)
+#
+# # Take a decreasing function of the gradient: an exponential
+# # The smaller beta is, the more independent the segmentation is of the
+# # actual image. For beta=1, the segmentation is close to a voronoi
+# beta = 5
+# eps = 1e-6
+# print('exp image...')
+# graph.data = np.exp(-beta * graph.data / graph.data.std()) + eps
+#
+# #X=face
+# print(face.shape)
+# exit(0)
+# # k_means = KMeans(init='k-means++', n_clusters=3, n_init=10)
+# # t0 = time.time()
+# # k_means.fit(X)
+# # t_batch = time.time() - t0
+# #
+# # mbk = MiniBatchKMeans(init='k-means++', n_clusters=3, batch_size=batch_size,
+# #                       n_init=10, max_no_improvement=10, verbose=0)
+# # t0 = time.time()
+# # mbk.fit(X)
+# # t_mini_batch = time.time() - t0
+#
+# # Apply spectral clustering (this step goes much faster if you have pyamg
+# # installed)
+# N_REGIONS = 10
+#
+# #Visualize the resulting regions
+# print('start clustering image...')
+# for assign_labels in ('discretize', 'kmeans'):#, 'discretize'):
+#     t0 = time.time()
+#     print('spectral clustering graph...')
+#     labels = spectral_clustering(graph, n_clusters=N_REGIONS,
+#                                  assign_labels=assign_labels, random_state=1)
+#     t1 = time.time()
+#     labels = labels.reshape(face.shape)
+#
+#     plt.figure(figsize=(5, 5))
+#     plt.imshow(face, cmap=plt.cm.gray)
+#     for l in range(N_REGIONS):
+#         plt.contour(labels == l, contours=1,
+#                     colors=[plt.cm.spectral(l / float(N_REGIONS))])
+#     plt.xticks(())
+#     plt.yticks(())
+#     title = 'Spectral clustering: %s, %.2fs' % (assign_labels, (t1 - t0))
+#     print(title)
+#     plt.title(title)
+# plt.show()
+#
 if __name__ == '__main__':
-    loadPoClo(PointC)
+    #print("Begin")
+    PointC = loadPoClo()
     X=scalePoClo(PointC)
     db=clustDBSCAN(X)
 
@@ -219,5 +217,10 @@ if __name__ == '__main__':
     # Number of clusters in labels, ignoring noise if present.
     n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
     print('Estimated number of clusters: %d' % n_clusters_)
+    X3 = remNoClust(X,labels)
+    #plotPoClo(X3)
 
-    plotPoClo(labels)
+    write_plyTri('out112.ply', X3)
+    print('%s saved' % 'out112.ply')
+#else :
+#    print("name=", __name__)

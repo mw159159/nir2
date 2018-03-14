@@ -34,12 +34,12 @@ def loadPoClo():
 #face = cv2.pyrDown(cv2.imread ('stul/disp/1d_2208_2b3(2).jpg'))
 #face = cv2.imread ('stul/disp/1d_2208_2b3(2).jpg')
     try:
-        print('PointC loaded from pickle')
         pointsC = load(open("pointsC.p","rb"))
+        print('PointC loaded from pickle')
     except FileNotFoundError:
         print('load data from file...')
         points2 = np.loadtxt("out3", delimiter=" ")
-        pointsC = np.hstack((points2[:,0:1],points2[:,1:2],points2[:,2:3],points2[:,3:4],points2[:,4:5],points2[:,5:6]))
+        pointsC = np.hstack((points2[::,0],points2[::,1:2],points2[::,2:3],points2[::,3:4],points2[::,4:5],points2[::,5:6]))
         dump(pointsC,open("pointsC.p","wb"))
     return pointsC
 #!print('invert X Y...')
@@ -57,27 +57,33 @@ def loadPoClo():
 #cv2.imshow('face', face)
 #cv2.waitKey()
 
-def scalePoClo(pointsC):
+def scalePoClo(in_pointsC):
     print('scaller...')
-    X = pointsC#StandardScaler().fit_transform(pointsC)#[:100000])
-    maxX=X[::,0:3].max()
-    X[:,0:1] = X[:,0:1]/maxX
-    X[:,1:2] = X[:,1:2]/maxX
-    X[:,2:3] = X[:,2:3]/maxX
-    return X
+    out_X = in_pointsC#StandardScaler().fit_transform(pointsC)#[:100000])
+    maxX=out_X[::,0:3].max()
+    # print(out_X[::,0:3].max())
+    # print(out_X[100])
+    out_X[::,0] = out_X[::,0]/maxX
+    out_X[::,1] = out_X[::,1]/maxX
+    out_X[::,2] = out_X[::,2]/maxX
+    # print(out_X[100])
+    # print(out_X[::,0:3].max())
+    return out_X
 
-def clustDBSCAN(X):
+def clustDBSCAN(in_X):
     try:
-        db = load(open("dbs.pickle","rb"))
+        out_db = load(open("dbs.pickle1","rb"))
         print('DB loaded from pickle')
     except FileNotFoundError:
         print('DBSCAN...')
         t0 = time.time()
-        db = DBSCAN(eps=0.01, min_samples=100).fit(X, sample_weight=X[:,3:4])
+        XR=np.zeros(X[:,3].shape)
+        XR = (X[:,3]/10) + (X[:,4]/10) + (X[:,5]/10)
+        out_db = DBSCAN(eps=0.01, min_samples=100).fit(in_X[::,0:3], sample_weight=XR)
         t_dbs = time.time() - t0
         print("Time: %.2f" % t_dbs)
-        dump(db,open("dbs.pickle","wb"))
-    return db
+        dump(out_db,open("dbs.pickle","wb"))
+    return out_db
 
 def plotPoClo(X):
     from matplotlib import pyplot
@@ -91,18 +97,26 @@ def plotPoClo(X):
 
 def remNoClust(X,labels):
     try:
-        X2 = load(open("X2.pickle","rb"))
+        X2 = load(open("X2.pickle1","rb"))
         print('X2 loaded from pickle')
     except FileNotFoundError:
         print('start X2...')
         t0 = time.time()
-        X2=np.array([0,0,0,0,0,0])
+        #X2=np.array([0,0,0,0,0,0])
+        Xt=np.zeros(X.shape)#X.copy()
+        cnt = 0
         for i in range(0,labels.shape[0]):
             if labels[i]==-1:
-                X[i]=[0,0,0]
+                X[i]=0#[0,0,0]
             else:
                 #if labels[i] in range(10,50):
-                X2 = np.vstack((X2,np.array([X[i,0],X[i,1],X[i,2],labels[i],200,100])))
+                #X2 = np.vstack((X2,np.array([X[i,0],X[i,1],X[i,2],labels[i],200,100])))
+                Xt[cnt] = X[i]
+                Xt[cnt,3] = labels[i]
+                Xt[cnt,4] = 200
+                Xt[cnt,5] = 100
+                cnt += 1
+        X2 = Xt[:cnt]
         t_dbs = time.time() - t0
         dump(X2,open("X2.pickle","wb"))
         print("end X2   Time: %.2f" % t_dbs)
@@ -220,7 +234,7 @@ if __name__ == '__main__':
     X3 = remNoClust(X,labels)
     #plotPoClo(X3)
 
-    write_plyTri('out112.ply', X3)
-    print('%s saved' % 'out112.ply')
+    write_plyTri('out114.ply', X3)
+    print('%s saved' % 'out114.ply')
 #else :
 #    print("name=", __name__)

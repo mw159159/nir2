@@ -78,7 +78,17 @@ def clustDBSCAN(in_X):
         print('DBSCAN...')
         t0 = time.time()
         XR=np.zeros(X[:,3].shape)
-        XR = (X[:,3]/10) + (X[:,4]/10) + (X[:,5]/10)
+        #XR = (X[:,3]/30) + (X[:,4]/30) + (X[:,5]/30)
+        XR[::1] = 1
+        #print(X[:,1].min(), X[:,1].max())
+        #exit(0)
+        cnt = 0
+        minXy = X[:,1].min()
+        for i in range(0,X.shape[0]):
+            if (X[i,1] < (minXy + 0.27)):
+                XR[i] = 0
+                cnt += 1
+        print(cnt)
         out_db = DBSCAN(eps=0.01, min_samples=100).fit(in_X[::,0:3], sample_weight=XR)
         t_dbs = time.time() - t0
         print("Time: %.2f" % t_dbs)

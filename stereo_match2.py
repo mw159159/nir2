@@ -52,6 +52,16 @@ def write_ply(fn, verts, colors):
         f.write((ply_header % dict(vert_num=len(verts))).encode('utf-8'))
         np.savetxt(f, verts, fmt='%f %f %f %d %d %d ')
 
+def quantImg(im, n=2):
+    #n = 2    # Number of levels of quantization
+    indices = np.arange(0,256)   # List of all colors
+    divider = np.linspace(0,255,n+1)[1] # we get a divider
+    quantiz = np.int0(np.linspace(0,255,n)) # we get quantization colors
+    color_levels = np.clip(np.int0(indices/divider),0,n-1) # color levels 0,1,2..
+    palette = quantiz[color_levels] # Creating the palette
+    im2 = palette[im]  # Applying palette on image
+    im2 = cv2.convertScaleAbs(im2) # Converting image back to uint8
+    return im2
 
 if __name__ == '__main__':
     print('loading images...')
@@ -132,6 +142,7 @@ if __name__ == '__main__':
     points = cv2.reprojectImageTo3D(disp, Q)
     #print(points.shape)
     #print(points[0,0])
+    imgR = quantImg(imgR, n=4)
     points2 = np.dstack((points,imgR[:,:,0:3]))
     #points2 = np.dstack((points[::,::,0:1]))
     #print(points2.shape)

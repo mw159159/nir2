@@ -142,9 +142,15 @@ if __name__ == '__main__':
     points = cv2.reprojectImageTo3D(disp, Q)
     #print(points.shape)
     #print(points[0,0])
-    imgR = quantImg(imgR, n=4)
+#    imgR = quantImg(imgR, n=4)
+#    imgR_Gray = cv2.cvtColor( imgR, cv2.COLOR_RGB2GRAY )
+#    imgR_Gray[:,:] = np.ceil(imgR_Gray[:,:]/10)#rint
+#    imgR_Gray[:,:] = imgR_Gray[:,:]*10
+#    points2 = np.dstack((points,imgR_Gray[:,:]))
+    #points2[:,:,3] = int(points2[:,:,3]/5)*5
+#    points2 = np.dstack((points2,imgR[:,:,1:3]))
+    imgR = cv2.cvtColor( imgR, cv2.COLOR_BGR2RGB )
     points2 = np.dstack((points,imgR[:,:,0:3]))
-    #points2 = np.dstack((points[::,::,0:1]))
     #print(points2.shape)
     #print(points2[0,0])
     mask = disp > disp.min()

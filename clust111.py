@@ -66,6 +66,9 @@ def scalePoClo(in_pointsC):
     out_X[::,0] = out_X[::,0]/maxX
     out_X[::,1] = out_X[::,1]/maxX
     out_X[::,2] = out_X[::,2]/maxX
+
+    #maxX=out_X[::,3].max()
+    #out_X[::,3] = out_X[::,3]/maxX
     # print(out_X[100])
     # print(out_X[::,0:3].max())
     return out_X
@@ -77,19 +80,19 @@ def clustDBSCAN(in_X):
     except FileNotFoundError:
         print('DBSCAN...')
         t0 = time.time()
-        XR=np.zeros(X[:,3].shape)
+        #XR=np.zeros(X[:,3].shape)
         #XR = (X[:,3]/30) + (X[:,4]/30) + (X[:,5]/30)
-        XR[::1] = 1
+        #XR[::1] = 1
         #print(X[:,1].min(), X[:,1].max())
         #exit(0)
-        cnt = 0
-        minXy = X[:,1].min()
-        for i in range(0,X.shape[0]):
-            if (X[i,1] < (minXy + 0.27)):
-                XR[i] = 0
-                cnt += 1
-        print(cnt)
-        out_db = DBSCAN(eps=0.01, min_samples=100).fit(in_X[::,0:3], sample_weight=XR)
+        #cnt = 0
+        #minXy = X[:,1].min()
+        #for i in range(0,X.shape[0]):
+        #    if (X[i,1] < (minXy + 0.27)):
+        #        XR[i] = 0
+        #        cnt += 1
+        #print(cnt)
+        out_db = DBSCAN(eps=0.01, min_samples=100).fit(in_X[::,0:3])
         t_dbs = time.time() - t0
         print("Time: %.2f" % t_dbs)
         dump(out_db,open("dbs.pickle","wb"))
@@ -100,7 +103,7 @@ def plotPoClo(X):
     from mpl_toolkits.mplot3d import Axes3D
     fig = pyplot.figure()
     ax = Axes3D(fig)
-    ax.scatter(X[:,0:1],X[:,1:2],X[:,2:3],c=X[:,3:4])
+    ax.scatter(X[:,0:1],X[:,1:2],X[:,2:3],c=X[:,3])
     pyplot.show()
     #print(labels.shape)
     #exit(0)
@@ -122,9 +125,10 @@ def remNoClust(X,labels):
                 #if labels[i] in range(10,50):
                 #X2 = np.vstack((X2,np.array([X[i,0],X[i,1],X[i,2],labels[i],200,100])))
                 Xt[cnt] = X[i]
-                Xt[cnt,3] = labels[i]
-                Xt[cnt,4] = 200
-                Xt[cnt,5] = 100
+                #Xt[cnt,3] = labels[i]
+                Xt[cnt,3] = X[i,3]
+                Xt[cnt,4] = X[i,4]#200
+                Xt[cnt,5] = X[i,5]#100
                 cnt += 1
         X2 = Xt[:cnt]
         t_dbs = time.time() - t0
@@ -233,6 +237,7 @@ if __name__ == '__main__':
     #print("Begin")
     PointC = loadPoClo()
     X=scalePoClo(PointC)
+    X[:,3] = X[:,3]*2
     db=clustDBSCAN(X)
 
     core_samples_mask = np.zeros_like(db.labels_, dtype=bool)

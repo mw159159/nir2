@@ -30,9 +30,9 @@ def write_plyTri(fn, verts):
         f.write((ply_header % dict(vert_num=3*len(verts),vert_tri=9*len(verts))).encode('utf-8'))
         delt=0.05
         for i in range(len(verts)):
-            c1 = ((verts[i,3]) % 255)
-            c2 = ((verts[i,3]*50) % 255)
-            c3 = ((verts[i,3]*25) % 255)
+            c1 = verts[i,3]#((verts[i,3]) % 255)
+            c2 = verts[i,4]
+            c3 = verts[i,5]
             #print(verts[i])
             f.write(('%f %f %f %d %d %d\n' % (verts[i,0],verts[i,1],verts[i,2],c1,c2,c3)).encode('utf-8'))
             f.write(('%f %f %f %d %d %d\n' % (verts[i,0]+delt,verts[i,1],verts[i,2],c1,c2,c3)).encode('utf-8'))

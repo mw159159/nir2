@@ -34,12 +34,12 @@ def loadPoClo():
 #face = cv2.pyrDown(cv2.imread ('stul/disp/1d_2208_2b3(2).jpg'))
 #face = cv2.imread ('stul/disp/1d_2208_2b3(2).jpg')
     try:
-        pointsC = load(open("pointsC.p","rb"))
+        pointsC = load(open("pointsC.p11","rb"))
         print('PointC loaded from pickle')
     except FileNotFoundError:
         print('load data from file...')
         points2 = np.loadtxt("out3", delimiter=" ")
-        pointsC = np.hstack((points2[::,0],points2[::,1:2],points2[::,2:3],points2[::,3:4],points2[::,4:5],points2[::,5:6]))
+        pointsC = points2[::,0:6]
         dump(pointsC,open("pointsC.p","wb"))
     return pointsC
 #!print('invert X Y...')
@@ -237,7 +237,7 @@ if __name__ == '__main__':
     #print("Begin")
     PointC = loadPoClo()
     X=scalePoClo(PointC)
-    X[:,3] = X[:,3]*2
+#    X[:,3] = X[:,3]*2
     db=clustDBSCAN(X)
 
     core_samples_mask = np.zeros_like(db.labels_, dtype=bool)

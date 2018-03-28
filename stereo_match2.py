@@ -149,8 +149,12 @@ if __name__ == '__main__':
 #    points2 = np.dstack((points,imgR_Gray[:,:]))
     #points2[:,:,3] = int(points2[:,:,3]/5)*5
 #    points2 = np.dstack((points2,imgR[:,:,1:3]))
-    imgR = cv2.cvtColor( imgR, cv2.COLOR_BGR2RGB )
-    points2 = np.dstack((points,imgR[:,:,0:3]))
+    imgL = cv2.cvtColor( imgL, cv2.COLOR_BGR2RGB )
+    points2 = np.dstack((points,imgL[:,:,0:3]))
+#    points2[:,:,3] = 255
+#    points2[:,:,4] = 0
+#    points2[:,:,5] = 0
+#    points2[:,:,3:6] = np.ceil(points2[:,:,3:6]/10)*10
     #print(points2.shape)
     #print(points2[0,0])
     mask = disp > disp.min()

@@ -198,22 +198,22 @@ def update(val):
             y3=float(rows)
             x0=float((x2+x3)/2)
             y0=float((y3+y2)/2)
-            print((x1-x0)*cos(radians(ptAllRp)))
-            print((y1-y0)*sin(radians(ptAllRp)))
+            #print(x1,y1)
             nx1=(x1-x0)*cos(radians(ptAllRp))-(y1-y0)*sin(radians(ptAllRp))+x0
             ny1=(x1-x0)*sin(radians(ptAllRp))+(y1-y0)*cos(radians(ptAllRp))+y0
             nx2=(x2-x0)*cos(radians(ptAllRp))-(y2-y0)*sin(radians(ptAllRp))+x0
             ny2=(x2-x0)*sin(radians(ptAllRp))+(y2-y0)*cos(radians(ptAllRp))+y0
             nx3=(x3-x0)*cos(radians(ptAllRp))-(y3-y0)*sin(radians(ptAllRp))+x0
             ny3=(x3-x0)*sin(radians(ptAllRp))+(y3-y0)*cos(radians(ptAllRp))+y0
-            #print(cols,rows)
-            print(x1,y1,x2,y2,x3,y3, cos(radians(ptAllRp)), sin(radians(ptAllRp)),x0,y0)
+            #print((x1-x0),sin(radians(ptAllRp)),(y1-y0),cos(radians(ptAllRp)))
+            #print(x1,y1,x2,y2,x3,y3)
             x1=nx1+pt1x+ptAllx
             y1=ny1+pt1y+ptAlly
             x2=nx2+pt2x+ptAllx
             y2=ny2+pt2y+ptAlly
             x3=nx3+pt3x+ptAllx
             y3=ny3+pt3y+ptAlly
+            print(x1,y1,x2,y2,x3,y3,x0,y0)
             img2 = cv2.warpAffine(imgR,cv2.getAffineTransform(
             np.float32([[0,0],[cols,0],[0,rows]]),
             np.float32([[x1,y1],[x2,y2],[x3,y3]])

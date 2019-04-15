@@ -85,8 +85,10 @@ if __name__ == '__main__':
     print('loading images...')
     #imgL = cv2.pyrDown( cv2.imread('../data/aloeL.jpg') )  # downscale images for faster processing
     #imgR = cv2.pyrDown( cv2.imread('../data/aloeR.jpg') )
-    imgL = cv2.pyrDown(cv2.imread('imgL2.jpg'))
-    imgR = cv2.pyrDown(cv2.imread('imgR2.jpg'))
+    #imgL = cv2.pyrDown(cv2.imread('imgL3.jpg'))
+    #imgR = cv2.pyrDown(cv2.imread('imgR3.jpg'))
+    imgL = cv2.imread('imgL3.jpg')
+    imgR = cv2.imread('imgR3.jpg')
     #cap = cv2.VideoCapture(2)
     #cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
     #cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
@@ -101,10 +103,10 @@ if __name__ == '__main__':
     rows,cols,_rgb = imgR.shape
     #print(rows)
     x1,y1,x2,y2,x3,y3 = calc_affine(cols,rows)
-    imgR = cv2.warpAffine(imgR,cv2.getAffineTransform(
-    np.float32([[0,0],[cols,0],[0,rows]]),
-    np.float32([[x1,y1],[x2,y2],[x3,y3]])
-    ),(cols,rows))
+    # imgR = cv2.warpAffine(imgR,cv2.getAffineTransform(
+    # np.float32([[0,0],[cols,0],[0,rows]]),
+    # np.float32([[x1,y1],[x2,y2],[x3,y3]])
+    # ),(cols,rows))
     #cap.release()
     #cap2.release()
     #exit(0)
@@ -113,36 +115,27 @@ if __name__ == '__main__':
     #np.float32([[0,0],[h1,w1],[h1,0]]),
     #),(cols,rows))
 
-    fig,ax = plt.subplots()
-    plt.subplots_adjust(bottom=0.25, left=0.02,right=0.98,top=0.98)
-    img2Object = plt.imshow(imgR)
-    plt.axis('off')
-    axcolor = 'lightgoldenrodyellow'
-    #axfreq = plt.axes([0.25, 0.1, 0.65, 0.02], facecolor=axcolor)#stepX stepY width height
-    #axamp = plt.axes([0.25, 0.125, 0.65, 0.02], facecolor=axcolor)
-
-    saveax = plt.axes([0.3, 0.25, 0.15, 0.04]) #stepX stepY width height
-    buttons = Button(saveax, 'Save settings', color=axcolor, hovercolor='0.975')
-    #buttons.on_clicked(save_map_settings)
-    loadax = plt.axes([0.5, 0.25, 0.15, 0.04]) #stepX stepY width height
-    buttonl = Button(loadax, 'Load', color=axcolor, hovercolor='0.975')
-    #buttonl.on_clicked(load_map_settings)
-
     # Depth map function
     SWS = 5
     PFS = 5
     PFC = 29
-    MDS = -25
-    NOD = 128
+    MDS = 16
+    NOD = 96
     TTH = 100
     UR = 10
-    SR = 15
+    SR = 32
     SPWS = 100
+    loading_settings = 0
+    WS = 3
+    BS = 2
 
     def stereo_depth_map(iimgL,iimgR):
-        c, r = iimgL.shape
-        disparity = np.zeros((c, r), np.uint8)
-        sbm = cv2.StereoBM_create(numDisparities=16, blockSize=15)
+        # print ('SWS='+str(SWS)+' PFS='+str(PFS)+' PFC='+str(PFC)+' MDS='+\
+        #        str(MDS)+' NOD='+str(NOD)+' TTH='+str(TTH))
+        # print (' UR='+str(UR)+' SR='+str(SR)+' SPWS='+str(SPWS))
+        c, r = iimgL.shape[::2]
+        #disparity = np.zeros((c, r), np.uint8)
+        sbm = cv2.StereoBM_create(numDisparities=112-16, blockSize=16)
         #sbm.SADWindowSize = SWS
         sbm.setPreFilterType(1)
         sbm.setPreFilterSize(PFS)
@@ -153,63 +146,183 @@ if __name__ == '__main__':
         sbm.setUniquenessRatio(UR)
         sbm.setSpeckleRange(SR)
         sbm.setSpeckleWindowSize(SPWS)
-        disparity = sbm.compute(iimgL, iimgR)
+        #cv2.FindStereoCorrespondenceBM(dmLeft, dmRight, disparity, sbm)
+        # disparity range is tuned for 'aloe' image pair
+        window_size = WS#3
+        min_disp = MDS
+        num_disp = NOD#112-min_disp
+        stereo = cv2.StereoSGBM_create(minDisparity = min_disp,
+            numDisparities = num_disp,
+            blockSize = BS,
+            P1 = 8*3*window_size**2,
+            P2 = 32*3*window_size**2,
+            disp12MaxDiff = 1,
+            uniquenessRatio = UR,
+            speckleWindowSize = SPWS,
+            speckleRange = SR
+        )
+        print('computing disparity...')
+        disparity = stereo.compute(imgL, imgR).astype(np.float32) / 16.0
+        #disparity = stereo.compute(imgL, imgR)#.astype(np.float32) / 16.0
+        #disparity = sbm.compute(iimgL, iimgR)
+        #disparity_visual = cv.CreateMat(c, r, cv.CV_8U)
         local_max = disparity.max()
         local_min = disparity.min()
-        print ("MAX " + str(local_max))
-        print ("MIN " + str(local_min))
+        #print ("MAX " + str(local_max))
+        #print ("MIN " + str(local_min))
         disparity_visual = (disparity-local_min)*(1.0/(local_max-local_min))
+        #disparity_visual = disparity
         local_max = disparity_visual.max()
         local_min = disparity_visual.min()
-        print ("MAX " + str(local_max))
-        print ("MIN " + str(local_min))
+        #print ("MAX " + str(local_max))
+        #print ("MIN " + str(local_min))
+        #cv.Normalize(disparity, disparity_visual, 0, 255, cv.CV_MINMAX)
+        #disparity_visual = np.array(disparity_visual)
         return disparity_visual
 
-    disparity = stereo_depth_map(rectified_pair)
+    disparity = stereo_depth_map(imgL,imgR)
+
+    # Set up and draw interface
+    # Draw left image and depth map
+    axcolor = 'lightgoldenrodyellow'
+    fig = plt.subplot(1,2,1)
+    imObject = plt.imshow(imgL[:,:,::-1], aspect='equal', cmap='jet')
+    plt.axis('off')
+    plt.subplots_adjust(bottom=0.25,top=0.98,left=0.02,right=0.98)
+    plt.subplot(1,2,2)
+    plt.axis('off')
+    dmObject = plt.imshow(disparity, cmap='gray')
+
+    #dmObject = plt.imshow(disparity, aspect='equal', cmap='jet')
+
+    saveax = plt.axes([0.3, 0.25, 0.15, 0.04]) #stepX stepY width height
+    buttons = Button(saveax, 'Save settings', color=axcolor, hovercolor='0.975')
+
+    def save_map_settings( event ):
+        buttons.label.set_text ("Saving...")
+        print('Saving to file...')
+        result = json.dumps({'SADWindowSize':SWS, 'preFilterSize':PFS, 'preFilterCap':PFC, \
+                 'minDisparity':MDS, 'numberOfDisparities':NOD, 'textureThreshold':TTH, \
+                 'uniquenessRatio':UR, 'speckleRange':SR, 'speckleWindowSize':SPWS, 'WindowSize':WS, 'BlockSize':BS},\
+                 sort_keys=True, indent=4, separators=(',',':'))
+        fName = 'stereo_cfg.txt'
+        f = open (str(fName), 'w')
+        f.write(result)
+        f.close()
+        buttons.label.set_text ("Save to file")
+        print ('Settings saved to file '+fName)
+
+    buttons.on_clicked(save_map_settings)
+
+    loadax = plt.axes([0.5, 0.25, 0.15, 0.04]) #stepX stepY width height
+    buttonl = Button(loadax, 'Load settings', color=axcolor, hovercolor='0.975')
+    def load_map_settings( event ):
+        global SWS, PFS, PFC, MDS, NOD, TTH, UR, SR, SPWS, WS, BS, loading_settings
+        loading_settings = 1
+        fName = 'stereo_cfg.txt'
+        print('Loading parameters from file...')
+        buttonl.label.set_text ("Loading...")
+        f=open(fName, 'r')
+        data = json.load(f)
+        sSWS.set_val(data['SADWindowSize'])
+        sPFS.set_val(data['preFilterSize'])
+        sPFC.set_val(data['preFilterCap'])
+        sMDS.set_val(data['minDisparity'])
+        sNOD.set_val(data['numberOfDisparities'])
+        sTTH.set_val(data['textureThreshold'])
+        sUR.set_val(data['uniquenessRatio'])
+        sSR.set_val(data['speckleRange'])
+        sSPWS.set_val(data['speckleWindowSize'])
+        sWS.set_val(data['WindowSize'])
+        sBS.set_val(data['BlockSize'])
+        f.close()
+        buttonl.label.set_text ("Load settings")
+        print ('Parameters loaded from file '+fName)
+        print ('Redrawing depth map with loaded parameters...')
+        loading_settings = 0
+        update(0)
+        print ('Done!')
+
+    buttonl.on_clicked(load_map_settings)
+    #plt.subplot(2,1,2)
+    #dmObject = plt.imshow(disparity, aspect='equal', cmap='jet')
+    loadax = plt.axes([0.7, 0.25, 0.15, 0.04]) #stepX stepY width height
+    buttonli = Button(loadax, 'Load img', color=axcolor, hovercolor='0.975')
+    def load_img( event ):
+        #global imgL,imgR
+        #imgL = cv2.imread('imgL2.jpg')
+        #imgR = cv2.imread('imgR2.jpg')
+        #load_affine_settings()
+        #rows,cols = imgR.shape[:2]
+        #x1,y1,x2,y2,x3,y3 = calc_affine(cols,rows)
+        # imgR = cv2.warpAffine(imgR,cv2.getAffineTransform(
+        # np.float32([[0,0],[cols,0],[0,rows]]),
+        # np.float32([[x1,y1],[x2,y2],[x3,y3]])
+        # ),(cols,rows))
+        update(2)
+    buttonli.on_clicked(load_img)
 
     # Draw interface for adjusting parameters
     print('Start interface creation (it takes up to 30 seconds)...')
 
-    SWSaxe = plt.axes([0.15, 0.01, 0.21, 0.02], axisbg=axcolor) #stepX stepY width height
-    PFSaxe = plt.axes([0.15, 0.05, 0.21, 0.02], axisbg=axcolor) #stepX stepY width height
-    PFCaxe = plt.axes([0.15, 0.09, 0.21, 0.02], axisbg=axcolor) #stepX stepY width height
-    MDSaxe = plt.axes([0.15, 0.13, 0.21, 0.02], axisbg=axcolor) #stepX stepY width height
-    NODaxe = plt.axes([0.15, 0.17, 0.21, 0.02], axisbg=axcolor) #stepX stepY width height
-    TTHaxe = plt.axes([0.15, 0.21, 0.21, 0.02], axisbg=axcolor) #stepX stepY width height
-    URaxe = plt.axes([0.15, 0.25, 0.21, 0.02], axisbg=axcolor) #stepX stepY width height
-    SRaxe = plt.axes([0.15, 0.29, 0.21, 0.02], axisbg=axcolor) #stepX stepY width height
-    SPWSaxe = plt.axes([0.15, 0.33, 0.21, 0.02], axisbg=axcolor) #stepX stepY width height
+    SWSaxe = plt.axes([0.15, 0.21, 0.7, 0.022], axisbg=axcolor) #stepX stepY width height
+    PFSaxe = plt.axes([0.15, 0.19, 0.7, 0.022], axisbg=axcolor) #stepX stepY width height
+    PFCaxe = plt.axes([0.15, 0.17, 0.7, 0.022], axisbg=axcolor) #stepX stepY width height
+    MDSaxe = plt.axes([0.15, 0.15, 0.7, 0.022], axisbg=axcolor) #stepX stepY width height
+    NODaxe = plt.axes([0.15, 0.13, 0.7, 0.022], axisbg=axcolor) #stepX stepY width height
+    TTHaxe = plt.axes([0.15, 0.11, 0.7, 0.022], axisbg=axcolor) #stepX stepY width height
+    URaxe = plt.axes([0.15, 0.09, 0.7, 0.022], axisbg=axcolor) #stepX stepY width height
+    SRaxe = plt.axes([0.15, 0.07, 0.7, 0.022], axisbg=axcolor) #stepX stepY width height
+    SPWSaxe = plt.axes([0.15, 0.05, 0.7, 0.022], axisbg=axcolor) #stepX stepY width height
+    WSaxe = plt.axes([0.15, 0.03, 0.7, 0.022], axisbg=axcolor) #stepX stepY width height
+    BSaxe = plt.axes([0.15, 0.01, 0.7, 0.022], axisbg=axcolor) #stepX stepY width height
 
-    sSWS = Slider(SWSaxe, 'SWS', 5.0, 255.0, valinit=5)
-    sPFS = Slider(PFSaxe, 'PFS', 5.0, 255.0, valinit=5)
-    sPFC = Slider(PFCaxe, 'PreFiltCap', 5.0, 63.0, valinit=29)
-    sMDS = Slider(MDSaxe, 'MinDISP', -100.0, 100.0, valinit=-25)
-    sNOD = Slider(NODaxe, 'NumOfDisp', 16.0, 256.0, valinit=128)
-    sTTH = Slider(TTHaxe, 'TxtrThrshld', 0.0, 1000.0, valinit=100)
-    sUR = Slider(URaxe, 'UnicRatio', 1.0, 20.0, valinit=10)
-    sSR = Slider(SRaxe, 'SpcklRng', 0.0, 40.0, valinit=15)
-    sSPWS = Slider(SPWSaxe, 'SpklWinSze', 0.0, 300.0, valinit=100)
+    sSWS = Slider(SWSaxe, 'SWS', 5.0, 255.0, valinit=SWS)
+    sPFS = Slider(PFSaxe, 'PFS', 5.0, 255.0, valinit=PFS)
+    sPFC = Slider(PFCaxe, 'ptAllRp', -2.0, 2.0, valinit=ptAllRp)
+    sMDS = Slider(MDSaxe, 'MinDISP', -100.0, 100.0, valinit=MDS)
+    sNOD = Slider(NODaxe, 'NumOfDisp', 16.0, 256.0, valinit=NOD)
+    sTTH = Slider(TTHaxe, 'TxtrThrshld', 0.0, 1000.0, valinit=TTH)
+    sUR = Slider(URaxe, 'UnicRatio', 1.0, 20.0, valinit=UR)
+    sSR = Slider(SRaxe, 'SpcklRng', 0.0, 40.0, valinit=SR)
+    sSPWS = Slider(SPWSaxe, 'SpklWinSize', 0.0, 300.0, valinit=SPWS)
+    sWS = Slider(WSaxe, 'WinSize', 0.0, 300.0, valinit=WS)
+    sBS = Slider(BSaxe, 'BlockSize', 0.0, 100.0, valinit=BS)
 
     # Update depth map parameters and redraw
     def update(val):
-        global SWS, PFS, PFC, MDS, NOD, TTH, UR, SR, SPWS
+        global SWS, PFS, PFC, MDS, NOD, TTH, UR, SR, SPWS, WS, BS, loading_settings,ptAllRp,imgL,imgR
         SWS = int(sSWS.val/2)*2+1 #convert to ODD
-        #print(SWS,sSWS.val)
-        #exit(0)
         PFS = int(sPFS.val/2)*2+1
-        PFC = int(sPFC.val/2)*2+1
+        #PFC = int(sPFC.val/2)*2+1
+        ptAllRp = sPFC.val
+        imgL = cv2.imread('imgL2.jpg')
+        imgR = cv2.imread('imgR2.jpg')
+        #imgL = cv2.pyrDown(cv2.imread('imgL2.jpg'))
+        #imgR = cv2.pyrDown(cv2.imread('imgR2.jpg'))
+        #load_affine_settings()
+        rows,cols = imgR.shape[:2]
+        x1,y1,x2,y2,x3,y3 = calc_affine(cols,rows)
+        imgR = cv2.warpAffine(imgR,cv2.getAffineTransform(
+        np.float32([[0,0],[cols,0],[0,rows]]),
+        np.float32([[x1,y1],[x2,y2],[x3,y3]])
+        ),(cols,rows))
         MDS = int(sMDS.val)
         NOD = int(sNOD.val/16)*16
         TTH = int(sTTH.val)
         UR = int(sUR.val)
         SR = int(sSR.val)
         SPWS= int(sSPWS.val)
+        WS= int(sWS.val)
+        BS= int(sBS.val)
         if ( loading_settings==0 ):
             print ('Rebuilding depth map')
-            disparity = stereo_depth_map(rectified_pair)
-            img2Object.set_data(disparity)
-            print ('Redraw depth map')
+            disparity = stereo_depth_map(imgL,imgR)
+            imObject.set_data(imgL[:,:,::-1])
+            dmObject.set_data(disparity)
+            print ('Done. Redraw depth map')
             plt.draw()
+
 
     # Connect update actions to control elements
     sSWS.on_changed(update)
@@ -221,54 +334,8 @@ if __name__ == '__main__':
     sUR.on_changed(update)
     sSR.on_changed(update)
     sSPWS.on_changed(update)
-
-    plt.show()
-    exit(0)
-
-        p1_axe = plt.axes([0.15, 0.01+0.4, 0.7, 0.025], axisbg=axcolor)
-        p2_axe = plt.axes([0.15, 0.05+0.4, 0.7, 0.025], axisbg=axcolor)
-        p3_axe = plt.axes([0.15, 0.09+0.4, 0.7, 0.025], axisbg=axcolor)
-        p4_axe = plt.axes([0.15, 0.13+0.4, 0.7, 0.025], axisbg=axcolor)
-        p5_axe = plt.axes([0.15, 0.17+0.4, 0.7, 0.025], axisbg=axcolor)
-        p6_axe = plt.axes([0.15, 0.21+0.4, 0.7, 0.025], axisbg=axcolor)
-        p7_axe = plt.axes([0.15, 0.25+0.4, 0.7, 0.025], axisbg=axcolor)
-
-        sp1 = Slider(p1_axe, 'p1', -200.0, 200.0, valinit=0)
-        sp2 = Slider(p2_axe, 'p2', -200.0, 200.0, valinit=0)
-        sp3 = Slider(p3_axe, 'p3', -200.0, 200.0, valinit=0)
-        sp4 = Slider(p4_axe, 'p4', -200.0, 200.0, valinit=0)
-        sp5 = Slider(p5_axe, 'p5', -200.0, 200.0, valinit=0)
-        sp6 = Slider(p6_axe, 'p6', -200.0, 200.0, valinit=0)
-        sp7 = Slider(p7_axe, 'p7', -200.0, 200.0, valinit=0)
-
-        # Update depth map parameters and redraw
-        def update(val):
-            global pt1x,pt1y,pt2x,pt2y,pt3x,pt3y,ptAllx,ptAlly,ptAllRp,ptAllRn,imgR,imgL
-            p1 = sp.val
-            p2 = spt1y.val
-            p3 = spt2x.val
-            p4 = spt2y.val
-            p5 = spt3x.val
-            p6 = spt3y.val
-            p7 = sptAllx.val
-
-            disp = stereo.compute(imgL, imgR).astype(np.float32) / 16.0
-
-            img2Object.set_data(img2wl)
-            fig1.canvas.draw()
-
-
-    # Connect update actions to control elements
-    spt1x.on_changed(update)
-    spt1y.on_changed(update)
-    spt2x.on_changed(update)
-    spt2y.on_changed(update)
-    spt3x.on_changed(update)
-    spt3y.on_changed(update)
-    sptAllx.on_changed(update)
-    sptAlly.on_changed(update)
-    sptAllRp.on_changed(update)
-    sptAllRn.on_changed(update)
+    sWS.on_changed(update)
+    sBS.on_changed(update)
 
     plt.show()
     exit(0)
@@ -310,33 +377,3 @@ if __name__ == '__main__':
     cv2.imshow('disparity', (disp-min_disp)/num_disp)
     cv2.waitKey()
     cv2.destroyAllWindows()
-
-    fig,ax = plt.subplots()
-    plt.subplots_adjust(bottom=0.25, left=0.02,right=0.98,top=0.98)
-    img2Object = plt.imshow(imgR)
-    plt.axis('off')
-    axcolor = 'lightgoldenrodyellow'
-    axfreq = plt.axes([0.25, 0.1, 0.65, 0.02], facecolor=axcolor)#stepX stepY width height
-    axamp = plt.axes([0.25, 0.125, 0.65, 0.02], facecolor=axcolor)
-
-    sfreq = Slider(axfreq, 'Freq', 0.1, 30.0, valinit=0)
-    samp = Slider(axamp, 'Amp', 0.1, 10.0, valinit=0)
-
-    def update(val):
-        amp = samp.val
-        freq = sfreq.val
-        l.set_ydata(amp*np.sin(2*np.pi*freq*t))
-        fig.canvas.draw_idle()
-        sfreq.on_changed(update)
-        samp.on_changed(update)
-
-    resetax = plt.axes([0.8, 0.025, 0.1, 0.04])
-    button = Button(resetax, 'Reset', color=axcolor, hovercolor='0.975')
-
-    def reset(event):
-        sfreq.reset()
-        samp.reset()
-    button.on_clicked(reset)
-
-    plt.show()
-    exit(0)

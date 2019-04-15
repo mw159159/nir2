@@ -19,17 +19,17 @@ evx,evy=0.0,0.0
 
 imageL = './imageL.jpg'
 imageR = './imageR.jpg'
-#cap = cv2.VideoCapture(2)
-#cap2 = cv2.VideoCapture(3)
-#cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
-#cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
-#cap2.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
-#cap2.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
-#ret, imgL = cap.read()
-#ret2, imgR = cap2.read()
+cap = cv2.VideoCapture(2)
+cap2 = cv2.VideoCapture(3)
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+cap2.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+cap2.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+ret, imgL = cap.read()
+ret2, imgR = cap2.read()
 #print('Read image...')
-imgL = cv2.imread(imageL)
-imgR = cv2.imread(imageR)
+#imgL = cv2.imread(imageL)
+#imgR = cv2.imread(imageR)
 #print(imgR.shape)
 #imgR = imgR[:,:,::-1]
 
@@ -94,7 +94,8 @@ def save_map_settings( event ):
     f.close()
     buttons.label.set_text ("Save to file")
     cv2.imwrite('imgL2.jpg',imgL)
-    cv2.imwrite('imgR2.jpg',img2)
+    cv2.imwrite('imgR2.jpg',imgR)
+    cv2.imwrite('imgR2_A.jpg',img2)
     print ('Settings saved to file '+fName)
 
 buttons.on_clicked(save_map_settings)

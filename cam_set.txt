@@ -6,7 +6,7 @@
     "pt3x":0.0,
     "pt3y":0.0,
     "ptAllRn":0.0,
-    "ptAllRp":45.0,
-    "ptAllx":0.0,
-    "ptAlly":0.0
+    "ptAllRp":1.1,
+    "ptAllx":-33.0357142,
+    "ptAlly":-24.1071428
 }
